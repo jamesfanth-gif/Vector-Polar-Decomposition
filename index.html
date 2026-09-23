@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vector Polar Decomposition Visualizer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --accent-alpha: #38bdf820;
+      --vector: #f43f5e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --x-comp: #3b82f6;
+      --y-comp: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 840px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      max-height: 480px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      background: #090d16;
+      cursor: crosshair;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 14px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .stat-title {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-top: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Vector Polar Decomposition</h1>
+      <p>Drag the canvas or adjust the sliders to change components.</p>
+    </header>
+
+    <div class="card canvas-container">
+      <canvas id="vectorCanvas"></canvas>
+    </div>
+
+    <div class="card controls">
+      <div class="slider-group">
+        <div class="slider-label">
+          <span style="color: var(--x-comp)">Horizontal (x)</span>
+          <span id="xValDisplay">-4</span>
+        </div>
+        <input type="range" id="xSlider" min="-10" max="10" step="0.1" value="-4" />
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span style="color: var(--y-comp)">Vertical (y)</span>
+          <span id="yValDisplay">3</span>
+        </div>
+        <input type="range" id="ySlider" min="-10" max="10" step="0.1" value="3" />
+      </div>
+    </div>
+
+    <div class="card stats-grid">
+      <div class="stat-box" style="border-color: var(--vector);">
+        <div class="stat-title">Magnitude (R)</div>
+        <div class="stat-value" id="rDisplay">5.00 m</div>
+      </div>
+      <div class="stat-box" style="border-color: var(--accent);">
+        <div class="stat-title">Counterclockwise (θ)</div>
+        <div class="stat-value" id="thetaDisplay">143.13°</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">Reference Angle (α)</div>
+        <div class="stat-value" id="alphaDisplay">36.87°</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-title">Polar Form</div>
+        <div class="stat-value" id="polarDisplay">5∠143.13°</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("vectorCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const xSlider = document.getElementById("xSlider");
+    const ySlider = document.getElementById("ySlider");
+    const xValDisplay = document.getElementById("xValDisplay");
+    const yValDisplay = document.getElementById("yValDisplay");
+
+    const rDisplay = document.getElementById("rDisplay");
+    const thetaDisplay = document.getElementById("thetaDisplay");
+    const alphaDisplay = document.getElementById("alphaDisplay");
+    const polarDisplay = document.getElementById("polarDisplay");
+
+    let x = parseFloat(xSlider.value);
+    let y = parseFloat(ySlider.value);
+    const GRID_LIMIT = 10;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+      draw();
+    }
+
+    function calculatePolar(vx, vy) {
+      const R = Math.hypot(vx, vy);
+      
+      // Standard angle in degrees [0, 360)
+      let thetaRad = Math.atan2(vy, vx);
+      let thetaDeg = (thetaRad * 180) / Math.PI;
+      if (thetaDeg < 0) thetaDeg += 360;
+
+      // Acute reference angle alpha with respect to nearest horizontal axis
+      let alphaDeg = (Math.atan2(Math.abs(vy), Math.abs(vx)) * 180) / Math.PI;
+
+      return { R, thetaDeg, alphaDeg };
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, color, width = 2) {
+      const headlen = 10;
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(
+        toX - headlen * Math.cos(angle - Math.PI / 6),
+        toY - headlen * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        toX - headlen * Math.cos(angle + Math.PI / 6),
+        toY - headlen * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function draw() {
+      const w = canvas.width / (window.devicePixelRatio || 1);
+      const h = canvas.height / (window.devicePixelRatio || 1);
+      const originX = w / 2;
+      const originY = h / 2;
+      const scale = (Math.min(w, h) / 2) / (GRID_LIMIT + 1);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Grid lines
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      ctx.lineWidth = 1;
+      for (let i = -GRID_LIMIT; i <= GRID_LIMIT; i++) {
+        ctx.beginPath();
+        ctx.moveTo(originX + i * scale, 0);
+        ctx.lineTo(originX + i * scale, h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, originY - i * scale);
+        ctx.lineTo(w, originY - i * scale);
+        ctx.stroke();
+      }
+
+      // Main Axes
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(originX, 0); ctx.lineTo(originX, h);
+      ctx.moveTo(0, originY); ctx.lineTo(w, originY);
+      ctx.stroke();
+
+      const targetX = originX + x * scale;
+      const targetY = originY - y * scale;
+
+      // X component (blue)
+      drawArrow(originX, originY, targetX, originY, "#3b82f6", 2);
+
+      // Y component (green)
+      drawArrow(targetX, originY, targetX, targetY, "#10b981", 2);
+
+      // Angle Arc (theta)
+      const { R, thetaDeg, alphaDeg } = calculatePolar(x, y);
+      const arcRadius = 36;
+      if (R > 0.01) {
+        ctx.beginPath();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 2;
+        // Canvas angles are clockwise in screen coordinates (inverted y)
+        ctx.arc(originX, originY, arcRadius, 0, -thetaDeg * (Math.PI / 180), true);
+        ctx.stroke();
+      }
+
+      // Resultant Vector R (pink/red)
+      drawArrow(originX, originY, targetX, targetY, "#f43f5e", 3);
+
+      // Update UI Stats
+      xValDisplay.textContent = x.toFixed(1);
+      yValDisplay.textContent = y.toFixed(1);
+      rDisplay.textContent = `${R.toFixed(2)} m`;
+      thetaDisplay.textContent = `${thetaDeg.toFixed(2)}°`;
+      alphaDisplay.textContent = `${alphaDeg.toFixed(2)}°`;
+      polarDisplay.textContent = `${R.toFixed(2)}∠${thetaDeg.toFixed(2)}°`;
+    }
+
+    function updateFromCanvas(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      const w = rect.width;
+      const h = rect.height;
+      const scale = (Math.min(w, h) / 2) / (GRID_LIMIT + 1);
+
+      let newX = (clickX - w / 2) / scale;
+      let newY = (h / 2 - clickY) / scale;
+
+      newX = Math.max(-GRID_LIMIT, Math.min(GRID_LIMIT, newX));
+      newY = Math.max(-GRID_LIMIT, Math.min(GRID_LIMIT, newY));
+
+      x = Math.round(newX * 10) / 10;
+      y = Math.round(newY * 10) / 10;
+
+      xSlider.value = x;
+      ySlider.value = y;
+      draw();
+    }
+
+    let isDragging = false;
+    canvas.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      updateFromCanvas(e);
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging) updateFromCanvas(e);
+    });
+    window.addEventListener("mouseup", () => (isDragging = false));
+
+    // Touch support for mobile
+    canvas.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      updateFromCanvas(e.touches[0]);
+      e.preventDefault();
+    });
+    window.addEventListener("touchmove", (e) => {
+      if (isDragging) updateFromCanvas(e.touches[0]);
+    });
+    window.addEventListener("touchend", () => (isDragging = false));
+
+    xSlider.addEventListener("input", (e) => {
+      x = parseFloat(e.target.value);
+      draw();
+    });
+
+    ySlider.addEventListener("input", (e) => {
+      y = parseFloat(e.target.value);
+      draw();
+    });
+
+    window.addEventListener("resize", resize);
+    window.addEventListener("DOMContentLoaded", resize);
+  </script>
+</body>
+</html>
