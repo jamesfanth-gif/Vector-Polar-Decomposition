@@ -3,210 +3,337 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vector Polar Decomposition Visualizer</title>
+  <title>2D Vector Quadrant Analysis & Polar Decomposition</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              dark: '#080c14',
+              card: '#0f172a',
+              border: '#1e293b',
+              theta: '#f59e0b',
+              alpha: '#a855f7',
+              vector: '#38bdf8',
+              compX: '#3b82f6',
+              compY: '#10b981',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
-    :root {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --accent: #38bdf8;
-      --accent-alpha: #38bdf820;
-      --vector: #f43f5e;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --x-comp: #3b82f6;
-      --y-comp: #10b981;
+    /* Custom scrollbar and subtle visual accents */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    ::-webkit-scrollbar-track {
+      background: #0b1120;
     }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px;
-      min-height: 100vh;
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
     }
-
-    .container {
-      max-width: 840px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
     }
-
-    header h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    header p {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .canvas-container {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      max-height: 480px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      border-radius: 8px;
-      background: #090d16;
-      cursor: crosshair;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .slider-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .slider-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.88rem;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-    }
-
-    .stat-box {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 12px 14px;
-      border-radius: 8px;
-      border-left: 3px solid var(--accent);
-    }
-
-    .stat-title {
-      font-size: 0.75rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .stat-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-top: 4px;
-      font-family: monospace;
+    .touch-none {
+      touch-action: none;
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Vector Polar Decomposition</h1>
-      <p>Drag the canvas or adjust the sliders to change components.</p>
-    </header>
+<body class="bg-[#070b12] text-slate-100 min-h-screen font-sans selection:bg-sky-500 selection:text-white flex flex-col justify-between">
 
-    <div class="card canvas-container">
-      <canvas id="vectorCanvas"></canvas>
-    </div>
-
-    <div class="card controls">
-      <div class="slider-group">
-        <div class="slider-label">
-          <span style="color: var(--x-comp)">Horizontal (x)</span>
-          <span id="xValDisplay">-4</span>
+  <header class="border-b border-slate-800/80 bg-[#0c121e]/80 backdrop-blur sticky top-0 z-50 px-4 py-3 sm:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center font-black text-lg shadow-lg shadow-sky-500/20">
+          V
         </div>
-        <input type="range" id="xSlider" min="-10" max="10" step="0.1" value="-4" />
-      </div>
-
-      <div class="slider-group">
-        <div class="slider-label">
-          <span style="color: var(--y-comp)">Vertical (y)</span>
-          <span id="yValDisplay">3</span>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+            2D Vector Quadrant Analysis
+            <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-800/50">Polar R ∠ θ</span>
+          </h1>
+          <p class="text-xs text-slate-400">Interactive decomposition, reference angle & standard angle visualizer</p>
         </div>
-        <input type="range" id="ySlider" min="-10" max="10" step="0.1" value="3" />
+      </div>
+      
+      <!-- Preset Buttons -->
+      <div class="flex items-center flex-wrap gap-2 text-xs">
+        <span class="text-slate-500 font-mono hidden md:inline">Presets:</span>
+        <button onclick="setVector(-4, 3)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition active:scale-95 font-medium">
+          Question 2 (-4, 3)
+        </button>
+        <button onclick="setVector(-8.2, 3)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition active:scale-95 font-medium">
+          Screenshot (-8.2, 3)
+        </button>
+        <button onclick="setVector(-6, -6)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 transition active:scale-95 font-medium">
+          Q3 (-6, -6)
+        </button>
+        <button onclick="setVector(7, -5)" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-400 border border-slate-700 transition active:scale-95 font-medium">
+          Q4 (7, -5)
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT COLUMN: Interactive Canvas -->
+    <div class="lg:col-span-7 flex flex-col gap-4">
+      <div class="relative bg-[#0a0f19] border border-slate-800 rounded-2xl p-3 shadow-2xl overflow-hidden flex flex-col">
+        
+        <!-- Top bar overlay inside canvas box -->
+        <div class="flex justify-between items-center px-3 py-2 border-b border-slate-800/60 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs font-mono text-slate-300">Live Coordinate Canvas</span>
+          </div>
+          <span class="text-xs text-slate-400 hidden sm:inline">Drag or tap anywhere to reposition vector</span>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="relative w-full aspect-square max-h-[560px] flex items-center justify-center touch-none">
+          <canvas id="vectorCanvas" class="w-full h-full rounded-xl cursor-crosshair touch-none select-none"></canvas>
+        </div>
+
+        <!-- Canvas Legend -->
+        <div class="mt-3 pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between text-xs px-2 gap-2 text-slate-400 font-mono">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-1 bg-sky-400 rounded-sm"></span>
+            <span>R (Modulus)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-1 bg-blue-500 rounded-sm"></span>
+            <span>x (Horizontal)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-1 bg-emerald-500 rounded-sm"></span>
+            <span>y (Vertical)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-1 bg-amber-500 rounded-sm"></span>
+            <span>θ (Polar Angle)</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-1 bg-purple-500 rounded-sm"></span>
+            <span>α (Reference)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Realtime Input Controls (Sliders + Number inputs) -->
+      <div class="bg-[#0f172a]/90 border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <span>Component Controls</span>
+          <span class="text-[10px] normal-case bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-normal">Range: -10 to +10</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- X Control -->
+          <div class="flex flex-col gap-2 p-3 bg-slate-900/60 rounded-xl border border-blue-900/30">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-blue-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-blue-500"></span> Horizontal (x)
+              </span>
+              <input type="number" id="numX" step="0.1" min="-10" max="10" value="-8.2" 
+                class="w-20 bg-slate-800 text-blue-300 font-mono text-center font-bold py-1 px-1.5 rounded border border-blue-700/50 focus:outline-none focus:ring-1 focus:ring-blue-400 text-sm" />
+            </div>
+            <input type="range" id="rangeX" min="-10" max="10" step="0.1" value="-8.2" 
+              class="w-full accent-blue-500 cursor-pointer h-2 bg-slate-800 rounded-lg" />
+          </div>
+
+          <!-- Y Control -->
+          <div class="flex flex-col gap-2 p-3 bg-slate-900/60 rounded-xl border border-emerald-900/30">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-bold text-emerald-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Vertical (y)
+              </span>
+              <input type="number" id="numY" step="0.1" min="-10" max="10" value="3.0" 
+                class="w-20 bg-slate-800 text-emerald-300 font-mono text-center font-bold py-1 px-1.5 rounded border border-emerald-700/50 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-sm" />
+            </div>
+            <input type="range" id="rangeY" min="-10" max="10" step="0.1" value="3.0" 
+              class="w-full accent-emerald-500 cursor-pointer h-2 bg-slate-800 rounded-lg" />
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="card stats-grid">
-      <div class="stat-box" style="border-color: var(--vector);">
-        <div class="stat-title">Magnitude (R)</div>
-        <div class="stat-value" id="rDisplay">5.00 m</div>
+    <!-- RIGHT COLUMN: Mathematical & Quadrant Breakdown -->
+    <div class="lg:col-span-5 flex flex-col gap-5">
+      
+      <!-- Highlight Polar Form Banner -->
+      <div class="bg-gradient-to-br from-slate-900 via-sky-950/40 to-slate-900 border border-sky-800/60 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="text-xs font-mono uppercase text-sky-400 tracking-wider font-semibold">Polar Representation ($R \angle \theta$)</div>
+        <div class="mt-2 text-3xl sm:text-4xl font-black font-mono tracking-tight text-white flex items-baseline gap-2">
+          <span id="resR" class="text-sky-300">8.73</span>
+          <span class="text-amber-400 text-2xl font-light">∠</span>
+          <span id="resTheta" class="text-amber-300">159.90°</span>
+        </div>
+        <div class="mt-2 text-xs text-slate-400 flex items-center gap-3">
+          <span class="inline-flex items-center gap-1">
+            <span class="text-slate-500 font-mono">Quadrant:</span>
+            <strong id="badgeQuadrant" class="text-amber-400 font-semibold">Quadrant II</strong>
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <span class="text-slate-500 font-mono">Ref Angle (α):</span>
+            <strong id="badgeAlpha" class="text-purple-300 font-mono font-semibold">20.10°</strong>
+          </span>
+        </div>
       </div>
-      <div class="stat-box" style="border-color: var(--accent);">
-        <div class="stat-title">Counterclockwise (θ)</div>
-        <div class="stat-value" id="thetaDisplay">143.13°</div>
+
+      <!-- Step-by-Step Calculation Breakdown -->
+      <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center justify-between">
+          <span>Analytical Step-by-Step</span>
+          <span class="text-xs text-slate-500 font-mono">Cartesian ➔ Polar</span>
+        </h3>
+
+        <!-- Step 1: Modulus R -->
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col gap-1.5 text-xs">
+          <div class="font-semibold text-sky-400 flex items-center justify-between">
+            <span>Step 1: Calculate Modulus (Magnitude) $R$</span>
+            <span class="font-mono text-[11px] text-slate-400">Pythagorean</span>
+          </div>
+          <div class="font-mono text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+            $$R = \sqrt{x^2 + y^2}$$
+            <div id="stepCalcR" class="text-sky-200 mt-1 font-semibold">
+              R = √((-8.20)² + (3.00)²) = √(67.24 + 9.00) = 8.73
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Reference Angle alpha -->
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col gap-1.5 text-xs">
+          <div class="font-semibold text-purple-400 flex items-center justify-between">
+            <span>Step 2: Reference Angle $\alpha$ (with nearest horizontal axis)</span>
+            <span class="font-mono text-[11px] text-slate-400">Acute Triangle Angle</span>
+          </div>
+          <div class="font-mono text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+            $$\alpha = \tan^{-1}\left(\frac{|y|}{|x|}\right)$$
+            <div id="stepCalcAlpha" class="text-purple-200 mt-1 font-semibold">
+              α = tan⁻¹(|3.00| / |-8.20|) = tan⁻¹(0.3659) = 20.10°
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Quadrant Angle theta -->
+        <div class="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800/80 flex flex-col gap-1.5 text-xs">
+          <div class="font-semibold text-amber-400 flex items-center justify-between">
+            <span>Step 3: Standard Polar Angle $\theta$ (Counterclockwise from $+x$)</span>
+            <span id="stepQuadrantRuleName" class="font-mono text-[11px] text-amber-400/80">Rule: 180° - α</span>
+          </div>
+          <div class="font-mono text-slate-300 bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+            <div id="stepRuleFormula" class="text-slate-400 mb-1">$$\theta = 180^\circ - \alpha$$</div>
+            <div id="stepCalcTheta" class="text-amber-200 font-semibold">
+              θ = 180° - 20.10° = 159.90°
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="stat-box">
-        <div class="stat-title">Reference Angle (α)</div>
-        <div class="stat-value" id="alphaDisplay">36.87°</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-title">Polar Form</div>
-        <div class="stat-value" id="polarDisplay">5∠143.13°</div>
+
+      <!-- Quadrant Reference Matrix Table -->
+      <div class="bg-[#0f172a] border border-slate-800 rounded-2xl p-5 shadow-lg flex flex-col gap-3">
+        <h3 class="text-sm font-semibold text-slate-200 uppercase tracking-wider">
+          Quadrant Conversion Reference Guide
+        </h3>
+        
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+          <!-- Q1 -->
+          <div id="cardQ1" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 transition">
+            <div class="font-bold text-slate-300 flex justify-between">
+              <span>Quadrant I</span>
+              <span class="text-[10px] text-slate-500">x &gt; 0, y &gt; 0</span>
+            </div>
+            <div class="text-amber-400 font-semibold mt-1">θ = α</div>
+          </div>
+
+          <!-- Q2 -->
+          <div id="cardQ2" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 transition">
+            <div class="font-bold text-slate-300 flex justify-between">
+              <span>Quadrant II</span>
+              <span class="text-[10px] text-slate-500">x &lt; 0, y &gt; 0</span>
+            </div>
+            <div class="text-amber-400 font-semibold mt-1">θ = 180° - α</div>
+          </div>
+
+          <!-- Q3 -->
+          <div id="cardQ3" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 transition">
+            <div class="font-bold text-slate-300 flex justify-between">
+              <span>Quadrant III</span>
+              <span class="text-[10px] text-slate-500">x &lt; 0, y &lt; 0</span>
+            </div>
+            <div class="text-amber-400 font-semibold mt-1">θ = 180° + α</div>
+          </div>
+
+          <!-- Q4 -->
+          <div id="cardQ4" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 transition">
+            <div class="font-bold text-slate-300 flex justify-between">
+              <span>Quadrant IV</span>
+              <span class="text-[10px] text-slate-500">x &gt; 0, y &lt; 0</span>
+            </div>
+            <div class="text-amber-400 font-semibold mt-1">θ = 360° - α</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
+  <footer class="border-t border-slate-800 bg-[#080d17] px-4 py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>Single-file GitHub Pages Ready application: save as <code class="text-sky-400">index.html</code></p>
+      <p class="font-mono text-slate-400">HTML5 Canvas • High-DPI Matrix Rendering • Pure JavaScript</p>
+    </div>
+  </footer>
+
+  <!-- JAVASCRIPT LOGIC -->
   <script>
+    // State variables
+    let x = -8.2;
+    let y = 3.0;
+    const GRID_EXTENT = 10; // Coordinate grid extends from -10 to +10
+
+    // DOM Elements
     const canvas = document.getElementById("vectorCanvas");
     const ctx = canvas.getContext("2d");
 
-    const xSlider = document.getElementById("xSlider");
-    const ySlider = document.getElementById("ySlider");
-    const xValDisplay = document.getElementById("xValDisplay");
-    const yValDisplay = document.getElementById("yValDisplay");
+    const rangeX = document.getElementById("rangeX");
+    const rangeY = document.getElementById("rangeY");
+    const numX = document.getElementById("numX");
+    const numY = document.getElementById("numY");
 
-    const rDisplay = document.getElementById("rDisplay");
-    const thetaDisplay = document.getElementById("thetaDisplay");
-    const alphaDisplay = document.getElementById("alphaDisplay");
-    const polarDisplay = document.getElementById("polarDisplay");
+    const resR = document.getElementById("resR");
+    const resTheta = document.getElementById("resTheta");
+    const badgeQuadrant = document.getElementById("badgeQuadrant");
+    const badgeAlpha = document.getElementById("badgeAlpha");
 
-    let x = parseFloat(xSlider.value);
-    let y = parseFloat(ySlider.value);
-    const GRID_LIMIT = 10;
+    const stepCalcR = document.getElementById("stepCalcR");
+    const stepCalcAlpha = document.getElementById("stepCalcAlpha");
+    const stepCalcTheta = document.getElementById("stepCalcTheta");
+    const stepRuleFormula = document.getElementById("stepRuleFormula");
+    const stepQuadrantRuleName = document.getElementById("stepQuadrantRuleName");
 
-    function resize() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      ctx.scale(dpr, dpr);
-      draw();
-    }
+    const cards = {
+      Q1: document.getElementById("cardQ1"),
+      Q2: document.getElementById("cardQ2"),
+      Q3: document.getElementById("cardQ3"),
+      Q4: document.getElementById("cardQ4")
+    };
 
-    function calculatePolar(vx, vy) {
+    function getQuadrantInfo(vx, vy) {
       const R = Math.hypot(vx, vy);
       
       // Standard angle in degrees [0, 360)
@@ -214,160 +341,411 @@
       let thetaDeg = (thetaRad * 180) / Math.PI;
       if (thetaDeg < 0) thetaDeg += 360;
 
-      // Acute reference angle alpha with respect to nearest horizontal axis
-      let alphaDeg = (Math.atan2(Math.abs(vy), Math.abs(vx)) * 180) / Math.PI;
+      // Acute reference angle alpha with nearest horizontal axis
+      let alphaDeg = 0;
+      if (Math.abs(vx) > 0.0001) {
+        alphaDeg = (Math.atan(Math.abs(vy) / Math.abs(vx)) * 180) / Math.PI;
+      } else {
+        alphaDeg = 90.0;
+      }
 
-      return { R, thetaDeg, alphaDeg };
+      let qName = "Axis";
+      let ruleName = "";
+      let ruleLatex = "";
+      let activeCard = null;
+
+      if (vx >= 0 && vy >= 0) {
+        qName = "Quadrant I";
+        ruleName = "Rule: θ = α";
+        ruleLatex = "θ = α";
+        activeCard = "Q1";
+      } else if (vx < 0 && vy >= 0) {
+        qName = "Quadrant II";
+        ruleName = "Rule: θ = 180° - α";
+        ruleLatex = "θ = 180° - α";
+        activeCard = "Q2";
+      } else if (vx < 0 && vy < 0) {
+        qName = "Quadrant III";
+        ruleName = "Rule: θ = 180° + α";
+        ruleLatex = "θ = 180° + α";
+        activeCard = "Q3";
+      } else {
+        qName = "Quadrant IV";
+        ruleName = "Rule: θ = 360° - α";
+        ruleLatex = "θ = 360° - α";
+        activeCard = "Q4";
+      }
+
+      return {
+        R,
+        thetaDeg,
+        alphaDeg,
+        qName,
+        ruleName,
+        ruleLatex,
+        activeCard
+      };
     }
 
-    function drawArrow(fromX, fromY, toX, toY, color, width = 2) {
-      const headlen = 10;
-      const angle = Math.atan2(toY - fromY, toX - fromX);
+    function updateUI() {
+      const q = getQuadrantInfo(x, y);
 
+      rangeX.value = x;
+      rangeY.value = y;
+      numX.value = Number(x).toFixed(1);
+      numY.value = Number(y).toFixed(1);
+
+      resR.textContent = q.R.toFixed(2);
+      resTheta.textContent = `${q.thetaDeg.toFixed(2)}°`;
+      badgeQuadrant.textContent = q.qName;
+      badgeAlpha.textContent = `${q.alphaDeg.toFixed(2)}°`;
+
+      // Update Step 1
+      stepCalcR.textContent = `R = √(${x.toFixed(2)}² + ${y.toFixed(2)}²) = √(${(x*x).toFixed(2)} + ${(y*y).toFixed(2)}) = ${q.R.toFixed(2)}`;
+
+      // Update Step 2
+      const absY = Math.abs(y).toFixed(2);
+      const absX = Math.abs(x).toFixed(2);
+      const ratio = Math.abs(x) > 0.001 ? (Math.abs(y)/Math.abs(x)).toFixed(4) : "∞";
+      stepCalcAlpha.textContent = `α = tan⁻¹(|${absY}| / |${absX}|) = tan⁻¹(${ratio}) = ${q.alphaDeg.toFixed(2)}°`;
+
+      // Update Step 3
+      stepQuadrantRuleName.textContent = q.ruleName;
+      stepRuleFormula.textContent = `Formula: ${q.ruleLatex}`;
+      
+      let stepCalcText = "";
+      if (q.activeCard === "Q1") {
+        stepCalcText = `θ = α = ${q.thetaDeg.toFixed(2)}°`;
+      } else if (q.activeCard === "Q2") {
+        stepCalcText = `θ = 180° - ${q.alphaDeg.toFixed(2)}° = ${q.thetaDeg.toFixed(2)}°`;
+      } else if (q.activeCard === "Q3") {
+        stepCalcText = `θ = 180° + ${q.alphaDeg.toFixed(2)}° = ${q.thetaDeg.toFixed(2)}°`;
+      } else if (q.activeCard === "Q4") {
+        stepCalcText = `θ = 360° - ${q.alphaDeg.toFixed(2)}° = ${q.thetaDeg.toFixed(2)}°`;
+      }
+      stepCalcTheta.textContent = stepCalcText;
+
+      // Highlight corresponding quadrant card
+      Object.keys(cards).forEach((key) => {
+        const el = cards[key];
+        if (key === q.activeCard) {
+          el.className = "p-2.5 rounded-xl border border-amber-500/80 bg-amber-950/20 shadow-lg shadow-amber-500/10";
+        } else {
+          el.className = "p-2.5 rounded-xl border border-slate-800 bg-slate-900/40 opacity-70";
+        }
+      });
+    }
+
+    function drawPillText(text, px, py, bgColor = "#0f172a", textColor = "#ffffff", borderColor = "#334155", font = "bold 12px 'JetBrains Mono', monospace") {
+      ctx.font = font;
+      const textMetrics = ctx.measureText(text);
+      const padX = 7;
+      const padY = 4;
+      const w = textMetrics.width + padX * 2;
+      const h = 18;
+      const rx = px - w / 2;
+      const ry = py - h / 2;
+
+      ctx.save();
+      ctx.fillStyle = bgColor;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.2;
+      
+      // Rounded rect
+      ctx.beginPath();
+      ctx.roundRect(rx, ry, w, h, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, px, py);
+      ctx.restore();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, color = "#38bdf8", lineWidth = 2.5, headLen = 11) {
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+      ctx.save();
       ctx.strokeStyle = color;
       ctx.fillStyle = color;
-      ctx.lineWidth = width;
+      ctx.lineWidth = lineWidth;
 
       ctx.beginPath();
       ctx.moveTo(fromX, fromY);
       ctx.lineTo(toX, toY);
       ctx.stroke();
 
+      // Arrow head
       ctx.beginPath();
       ctx.moveTo(toX, toY);
-      ctx.lineTo(
-        toX - headlen * Math.cos(angle - Math.PI / 6),
-        toY - headlen * Math.sin(angle - Math.PI / 6)
-      );
-      ctx.lineTo(
-        toX - headlen * Math.cos(angle + Math.PI / 6),
-        toY - headlen * Math.sin(angle + Math.PI / 6)
-      );
+      ctx.lineTo(toX - headLen * Math.cos(angle - Math.PI / 6), toY - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(toX - headLen * Math.cos(angle + Math.PI / 6), toY - headLen * Math.sin(angle + Math.PI / 6));
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
     }
 
-    function draw() {
-      const w = canvas.width / (window.devicePixelRatio || 1);
-      const h = canvas.height / (window.devicePixelRatio || 1);
+    function renderCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      
+      // Auto-fit High-DPI canvas
+      if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+        canvas.width = Math.round(rect.width * dpr);
+        canvas.height = Math.round(rect.height * dpr);
+      }
+
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
       const originX = w / 2;
       const originY = h / 2;
-      const scale = (Math.min(w, h) / 2) / (GRID_LIMIT + 1);
+      const scale = (Math.min(w, h) / 2) / (GRID_EXTENT + 1.2);
 
-      ctx.clearRect(0, 0, w, h);
+      // Background
+      ctx.fillStyle = "#0a0f19";
+      ctx.fillRect(0, 0, w, h);
 
-      // Grid lines
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+      // Minor grid lines (1 unit intervals)
       ctx.lineWidth = 1;
-      for (let i = -GRID_LIMIT; i <= GRID_LIMIT; i++) {
+      for (let i = -GRID_EXTENT; i <= GRID_EXTENT; i++) {
+        if (i === 0) continue;
+        const xPos = originX + i * scale;
+        const yPos = originY - i * scale;
+
+        ctx.strokeStyle = "#162032";
         ctx.beginPath();
-        ctx.moveTo(originX + i * scale, 0);
-        ctx.lineTo(originX + i * scale, h);
+        ctx.moveTo(xPos, 0); ctx.lineTo(xPos, h);
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(0, originY - i * scale);
-        ctx.lineTo(w, originY - i * scale);
+        ctx.moveTo(0, yPos); ctx.lineTo(w, yPos);
         ctx.stroke();
       }
 
-      // Main Axes
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+      // Major coordinate axes (X & Y)
       ctx.lineWidth = 1.5;
+      ctx.strokeStyle = "#334155";
       ctx.beginPath();
       ctx.moveTo(originX, 0); ctx.lineTo(originX, h);
       ctx.moveTo(0, originY); ctx.lineTo(w, originY);
       ctx.stroke();
 
-      const targetX = originX + x * scale;
-      const targetY = originY - y * scale;
+      // Axis Tick Labels (-10, -5, 5, 10)
+      ctx.font = "10px 'JetBrains Mono', monospace";
+      ctx.fillStyle = "#64748b";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
 
-      // X component (blue)
-      drawArrow(originX, originY, targetX, originY, "#3b82f6", 2);
+      [-10, -5, 5, 10].forEach((val) => {
+        const tickX = originX + val * scale;
+        ctx.fillText(val, tickX, originY + 6);
 
-      // Y component (green)
-      drawArrow(targetX, originY, targetX, targetY, "#10b981", 2);
+        const tickY = originY - val * scale;
+        ctx.save();
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillText(val, originX - 6, tickY);
+        ctx.restore();
+      });
 
-      // Angle Arc (theta)
-      const { R, thetaDeg, alphaDeg } = calculatePolar(x, y);
-      const arcRadius = 36;
-      if (R > 0.01) {
+      // Target Vector Coordinates in screen space
+      const targetPx = originX + x * scale;
+      const targetPy = originY - y * scale;
+      const q = getQuadrantInfo(x, y);
+
+      // 1. Horizontal Component (Blue) along x-axis
+      ctx.save();
+      ctx.strokeStyle = "#3b82f6";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(originX, originY);
+      ctx.lineTo(targetPx, originY);
+      ctx.stroke();
+      ctx.restore();
+
+      // Label for x component
+      const xMidX = (originX + targetPx) / 2;
+      const xOffsetSign = y >= 0 ? 16 : -16;
+      drawPillText(`x = ${x.toFixed(1)}`, xMidX, originY + xOffsetSign, "#0c1527", "#60a5fa", "#1d4ed8");
+
+      // 2. Vertical Component (Green) connecting x-axis to tip
+      ctx.save();
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(targetPx, originY);
+      ctx.lineTo(targetPx, targetPy);
+      ctx.stroke();
+      ctx.restore();
+
+      // Label for y component
+      const yMidY = (originY + targetPy) / 2;
+      const yOffsetSign = x >= 0 ? 32 : -32;
+      drawPillText(`y = ${y.toFixed(1)}`, targetPx + yOffsetSign, yMidY, "#092218", "#34d399", "#047857");
+
+      // Perpendicular right-angle square marker (⊾)
+      if (Math.abs(x) > 0.6 && Math.abs(y) > 0.6) {
+        const sqSize = 10;
+        const dirX = x >= 0 ? -1 : 1;
+        const dirY = y >= 0 ? -1 : 1;
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.strokeStyle = "#38bdf8";
-        ctx.lineWidth = 2;
-        // Canvas angles are clockwise in screen coordinates (inverted y)
-        ctx.arc(originX, originY, arcRadius, 0, -thetaDeg * (Math.PI / 180), true);
+        ctx.moveTo(targetPx + dirX * sqSize, originY);
+        ctx.lineTo(targetPx + dirX * sqSize, originY + dirY * sqSize);
+        ctx.lineTo(targetPx, originY + dirY * sqSize);
         ctx.stroke();
       }
 
-      // Resultant Vector R (pink/red)
-      drawArrow(originX, originY, targetX, targetY, "#f43f5e", 3);
+      // Standard angle theta (Warm Amber Arc)
+      if (q.R > 0.3) {
+        const thetaRadius = Math.min(scale * 3.4, Math.max(38, q.R * scale * 0.45));
+        ctx.save();
+        ctx.strokeStyle = "#f59e0b";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        // Standard angle goes CCW from positive x-axis (0 radians)
+        // Canvas coordinate y is flipped, so counterclockwise corresponds to anticlockwise=true
+        ctx.arc(originX, originY, thetaRadius, 0, -q.thetaDeg * (Math.PI / 180), true);
+        ctx.stroke();
 
-      // Update UI Stats
-      xValDisplay.textContent = x.toFixed(1);
-      yValDisplay.textContent = y.toFixed(1);
-      rDisplay.textContent = `${R.toFixed(2)} m`;
-      thetaDisplay.textContent = `${thetaDeg.toFixed(2)}°`;
-      alphaDisplay.textContent = `${alphaDeg.toFixed(2)}°`;
-      polarDisplay.textContent = `${R.toFixed(2)}∠${thetaDeg.toFixed(2)}°`;
+        // Theta label positioned at half the angle
+        const midThetaRad = (q.thetaDeg / 2) * (Math.PI / 180);
+        const thetaLabelR = thetaRadius + 16;
+        const thetaLabelX = originX + thetaLabelR * Math.cos(midThetaRad);
+        const thetaLabelY = originY - thetaLabelR * Math.sin(midThetaRad);
+        drawPillText(`θ = ${q.thetaDeg.toFixed(1)}°`, thetaLabelX, thetaLabelY, "#271b07", "#fbbf24", "#b45309", "bold 11px 'JetBrains Mono', monospace");
+        ctx.restore();
+      }
+
+      // Reference angle alpha (Purple Arc near horizontal axis)
+      if (q.R > 1.2 && q.alphaDeg > 6 && q.alphaDeg < 86) {
+        const alphaRadius = Math.min(scale * 2.0, q.R * scale * 0.65);
+        ctx.save();
+        ctx.strokeStyle = "#c084fc";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+
+        // Baseline axis for alpha: 0 rad for Q1/Q4; Math.PI for Q2/Q3
+        let baseAngle = (x < 0) ? Math.PI : 0;
+        let targetAngle = -Math.atan2(y, x);
+
+        if (x < 0) {
+          ctx.arc(originX, originY, alphaRadius, Math.PI, -Math.atan2(y, x), y < 0);
+        } else {
+          ctx.arc(originX, originY, alphaRadius, 0, -Math.atan2(y, x), y > 0);
+        }
+        ctx.stroke();
+
+        // Alpha label
+        const alphaMidAngle = (baseAngle + targetAngle) / 2;
+        const alphaLabelR = alphaRadius + 14;
+        const alphaLabelX = originX + alphaLabelR * Math.cos(alphaMidAngle);
+        const alphaLabelY = originY + alphaLabelR * Math.sin(alphaMidAngle);
+        drawPillText(`α = ${q.alphaDeg.toFixed(1)}°`, alphaLabelX, alphaLabelY, "#210936", "#d8b4fe", "#7e22ce", "10px 'JetBrains Mono', monospace");
+        ctx.restore();
+      }
+
+      // Resultant vector arrow (Sky-Blue)
+      drawArrow(originX, originY, targetPx, targetPy, "#38bdf8", 3.2, 13);
+
+      // Inline label along the hypotenuse: R = ...
+      if (q.R > 1.0) {
+        const rMidX = (originX + targetPx) / 2;
+        const rMidY = (originY + targetPy) / 2;
+        // Shift perpendicular to line for readability
+        const angle = Math.atan2(targetPy - originY, targetPx - originX);
+        const perpX = -Math.sin(angle) * 16;
+        const perpY = Math.cos(angle) * 16;
+        drawPillText(`R = ${q.R.toFixed(2)}`, rMidX + perpX, rMidY + perpY, "#082f49", "#7dd3fc", "#0284c7");
+      }
+
+      // Tip Tooltip Badge (Exact design matching user screenshot: `(-8.2, 3)`)
+      const badgeOffsetX = x >= 0 ? 0 : 0;
+      const badgeOffsetY = y >= 0 ? -22 : 22;
+      drawPillText(`(${x.toFixed(1)}, ${y.toFixed(1)})`, targetPx + badgeOffsetX, targetPy + badgeOffsetY, "#090d16", "#ffffff", "#38bdf8", "bold 12px 'JetBrains Mono', monospace");
+
+      // Draw anchor point on arrow tip
+      ctx.beginPath();
+      ctx.arc(targetPx, targetPy, 4.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#38bdf8";
+      ctx.fill();
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
     }
 
-    function updateFromCanvas(e) {
+    function setVector(newX, newY) {
+      x = Math.max(-GRID_EXTENT, Math.min(GRID_EXTENT, Math.round(newX * 10) / 10));
+      y = Math.max(-GRID_EXTENT, Math.min(GRID_EXTENT, Math.round(newY * 10) / 10));
+      updateUI();
+      renderCanvas();
+    }
+
+    function updateFromPointer(e) {
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      
+      if (clientX === undefined || clientY === undefined) return;
+
+      const px = clientX - rect.left;
+      const py = clientY - rect.top;
 
       const w = rect.width;
       const h = rect.height;
-      const scale = (Math.min(w, h) / 2) / (GRID_LIMIT + 1);
+      const originX = w / 2;
+      const originY = h / 2;
+      const scale = (Math.min(w, h) / 2) / (GRID_EXTENT + 1.2);
 
-      let newX = (clickX - w / 2) / scale;
-      let newY = (h / 2 - clickY) / scale;
+      const calculatedX = (px - originX) / scale;
+      const calculatedY = (originY - py) / scale;
 
-      newX = Math.max(-GRID_LIMIT, Math.min(GRID_LIMIT, newX));
-      newY = Math.max(-GRID_LIMIT, Math.min(GRID_LIMIT, newY));
-
-      x = Math.round(newX * 10) / 10;
-      y = Math.round(newY * 10) / 10;
-
-      xSlider.value = x;
-      ySlider.value = y;
-      draw();
+      setVector(calculatedX, calculatedY);
     }
 
-    let isDragging = false;
-    canvas.addEventListener("mousedown", (e) => {
-      isDragging = true;
-      updateFromCanvas(e);
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (isDragging) updateFromCanvas(e);
-    });
-    window.addEventListener("mouseup", () => (isDragging = false));
+    let isInteracting = false;
 
-    // Touch support for mobile
-    canvas.addEventListener("touchstart", (e) => {
-      isDragging = true;
-      updateFromCanvas(e.touches[0]);
-      e.preventDefault();
-    });
-    window.addEventListener("touchmove", (e) => {
-      if (isDragging) updateFromCanvas(e.touches[0]);
-    });
-    window.addEventListener("touchend", () => (isDragging = false));
-
-    xSlider.addEventListener("input", (e) => {
-      x = parseFloat(e.target.value);
-      draw();
+    canvas.addEventListener("pointerdown", (e) => {
+      isInteracting = true;
+      canvas.setPointerCapture(e.pointerId);
+      updateFromPointer(e);
     });
 
-    ySlider.addEventListener("input", (e) => {
-      y = parseFloat(e.target.value);
-      draw();
+    canvas.addEventListener("pointermove", (e) => {
+      if (isInteracting) updateFromPointer(e);
     });
 
-    window.addEventListener("resize", resize);
-    window.addEventListener("DOMContentLoaded", resize);
+    canvas.addEventListener("pointerup", (e) => {
+      isInteracting = false;
+      try { canvas.releasePointerCapture(e.pointerId); } catch(err) {}
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      isInteracting = false;
+    });
+
+    // Control Listeners
+    rangeX.addEventListener("input", (e) => setVector(parseFloat(e.target.value), y));
+    rangeY.addEventListener("input", (e) => setVector(x, parseFloat(e.target.value)));
+
+    numX.addEventListener("change", (e) => setVector(parseFloat(e.target.value) || 0, y));
+    numY.addEventListener("change", (e) => setVector(x, parseFloat(e.target.value) || 0));
+
+    window.addEventListener("resize", renderCanvas);
+
+    // Initial boot
+    window.addEventListener("DOMContentLoaded", () => {
+      updateUI();
+      renderCanvas();
+    });
   </script>
 </body>
 </html>
